@@ -1,6 +1,7 @@
 import datetime
 import sqlite3
 import os.path
+import json
 
 
 def connect():
@@ -38,16 +39,23 @@ def create_tables():
     return conn
 
 
-def fetch_all_bots():
+def fetch_all_bots(in_json=True):
     """
         Devuelve todos las entradas de la tabla "Bots".
     """
     conn = connect()
+    if in_json:
+        conn.row_factory = sqlite3.Row
     c = conn.cursor()
     c.execute("""SELECT * FROM Bots""")
-    data = c.fetchall()
+    rows = c.fetchall()
     conn.close()
-    return data
+
+    if in_json:
+        rows = json.dumps([dict(ix) for ix in rows])
+        rows = json.loads(rows)
+    return rows
+
 
 def insert_bot(name: str, local_ip: str, temp: int, gathering_map: str):
     """
@@ -57,6 +65,18 @@ def insert_bot(name: str, local_ip: str, temp: int, gathering_map: str):
     c = conn.cursor()
 
     c.execute("""INSERT INTO Bots VALUES (?,?,?,?)""", (name, local_ip, temp, gathering_map))
+    conn.commit()
+    conn.close()
+
+
+def delete_bot(name: str):
+    """
+        Borra un bot de la tabla "Bots".
+    """
+    conn = connect()
+    c = conn.cursor()
+
+    c.execute("""DELETE FROM Bots WHERE name = (?)""", [name])
     conn.commit()
     conn.close()
 
@@ -100,20 +120,25 @@ def insert_transaction(quantity: int, bot_name: str):
     conn.close()
 
 
-def fetch_all_transactions_from_bot(bot_name: str):
+def fetch_all_transactions_from_bot(bot_name: str, in_json=True):
     """
         Obtiene todas las transacciones asociadas a un bot de la tabla "Transactions".
     """
     conn = connect()
+    if in_json:
+        conn.row_factory = sqlite3.Row
     c = conn.cursor()
     bot_id = get_bot_id(bot_name)
     if bot_id:
         c.execute("""SELECT * FROM Transactions WHERE bot_id = (?)""", [bot_id])
-        data = c.fetchall()
+        rows = c.fetchall()
+        if in_json:
+            rows = json.dumps([dict(ix) for ix in rows])
+            rows = json.loads(rows)
     else:
-        data = list()
+        rows = list()
     conn.close()
-    return data
+    return rows
 
 
 def get_bot_id(bot_name: str):
