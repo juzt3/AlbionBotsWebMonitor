@@ -157,3 +157,7 @@ cython_debug/
 *.dist/
 *.onefile-build/
 nuitka.txt
+
+bots.db
+bots_ips.json
+tests.py
