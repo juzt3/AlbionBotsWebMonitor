@@ -57,6 +57,21 @@ def fetch_all_bots(in_json=True):
     return rows
 
 
+def fetch_bot_details(bot_name: str, in_json=True):
+    conn = connect()
+    if in_json:
+        conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+    c.execute("""SELECT * FROM Bots WHERE name = (?)""", [bot_name])
+    rows = c.fetchall()
+    conn.close()
+
+    if in_json:
+        rows = json.dumps([dict(ix) for ix in rows])
+        rows = json.loads(rows)
+    return rows[0]
+
+
 def insert_bot(name: str, local_ip: str, temp: int, gathering_map: str):
     """
         Inserta un nuevo bot en la tabla "Bots".
@@ -75,7 +90,6 @@ def delete_bot(name: str):
     """
     conn = connect()
     c = conn.cursor()
-
     c.execute("""DELETE FROM Bots WHERE name = (?)""", [name])
     conn.commit()
     conn.close()
