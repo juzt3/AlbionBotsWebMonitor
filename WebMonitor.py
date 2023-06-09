@@ -30,7 +30,10 @@ async def root(request: Request):
         local_ip = bot['local_ip']
         images_url[local_ip] = f'{local_ip}:8000/client'
 
-    return templates.TemplateResponse("home.html", {"request": request, "bots": bots, "images_url": images_url})
+    return templates.TemplateResponse("home.html", {"request": request, "bots": bots, "images_url": images_url}, headers={"Cache-Control": "no-cache, no-store, must-revalidate",
+                                                                                                                          "Pragma": "no-cache",
+                                                                                                                          "Expires": "0"
+                                                                                                                          })
 
 
 @web_monitor.get("/bot_details/{bot_name}")
