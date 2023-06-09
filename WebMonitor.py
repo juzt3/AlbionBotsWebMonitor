@@ -39,9 +39,10 @@ async def root(request: Request):
 @web_monitor.get("/bot_details/{bot_name}")
 async def bot_details(request: Request, bot_name: str):
     details = database.fetch_bot_details(bot_name)
-    transactions = database.fetch_all_transactions_from_bot(bot_name)
-    avg_this_year = data_tratment.transactions_to_average_per_month(transactions, datetime.datetime.now().year, game_format=False)
-    return templates.TemplateResponse("bot_details.html", {"request": request, "details": details, "avg_this_year": avg_this_year})
+    current_year = datetime.datetime.now().year
+    transactions = database.fetch_transactions_by_year(bot_name, current_year)
+    total_this_year, avg = data_tratment.calculate_total_per_month(transactions, True)
+    return templates.TemplateResponse("bot_details.html", {"request": request, "details": details, "total_this_year": total_this_year, "avg_year": avg})
 
 
 @web_monitor.put("/update_temp/{bot_name}/{new_temp}")

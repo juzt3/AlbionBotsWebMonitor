@@ -2,6 +2,7 @@ import datetime
 import sqlite3
 import os.path
 import json
+import pandas as pd
 
 
 def connect():
@@ -10,9 +11,16 @@ def connect():
     """
     if os.path.isfile("./bots.db"):
         conn = sqlite3.connect("bots.db")
-        return conn
     else:
-        return create_tables()
+        conn = create_tables()
+
+    conn.execute('PRAGMA journal_mode = OFF;')
+    conn.execute('PRAGMA synchronous = 0;')
+    conn.execute('PRAGMA cache_size = 1000000;')  # give it a GB
+    conn.execute('PRAGMA locking_mode = EXCLUSIVE;')
+    conn.execute('PRAGMA temp_store = MEMORY;')
+
+    return conn
 
 
 def create_tables():
@@ -121,13 +129,14 @@ def update_local_ip(bot_name: str, new_ip: str):
     conn.close()
 
 
-def insert_transaction(quantity: int, bot_name: str):
+def insert_transaction(quantity: int, bot_name: str, date=None):
     """
         Inserta una nueva transacción en la tabla "Transactions" asociada a un bot.
     """
     conn = connect()
     c = conn.cursor()
-    date = datetime.datetime.now()
+    if date is None:
+        date = datetime.datetime.now()
     bot_id = get_bot_id(bot_name)
     c.execute("""INSERT INTO Transactions VALUES (datetime(?),?,?)""", (date, quantity, bot_id))
     conn.commit()
@@ -153,6 +162,21 @@ def fetch_all_transactions_from_bot(bot_name: str, in_json=True):
         rows = list()
     conn.close()
     return rows
+
+
+def fetch_transactions_by_year(bot_name: str, year: int):
+    """
+    Obtiene las transacciones de un año específico y un bot_id dado directamente de la base de datos.
+    """
+    conn = connect()
+    bot_id = get_bot_id(bot_name)
+    query = """
+        SELECT date, quantity
+        FROM Transactions
+        WHERE strftime('%Y', date) = ? AND bot_id = ?
+    """
+    transactions = pd.read_sql_query(query, conn, params=(str(year), int(bot_id)))
+    return transactions
 
 
 def get_bot_id(bot_name: str):

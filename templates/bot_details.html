@@ -35,16 +35,24 @@
     {{ svg() }}
     <main class="d-flex flex-row">
         {{ sidebar() }}
-
         <div class="b-example-divider"></div>
-
-        <div class="d-flex flex-column flex-grow-1 p-3 text-white bg-dark" id="botDetails">
-            <h1>{{details['name']}}</h1>
-            <p>{{details['local_ip']}}</p>
-            <p>{{details['gathering_map']}}</p>
-
+        <div class="d-flex flex-column flex-grow-1 p-5 bg-dark" style="--bs-bg-opacity: .94;" id="botDetails">
+            <span class="w-25 rounded-3 shadow bg-light">
+                <div class="card bg-dark text-white" style="--bs-bg-opacity: .95;">
+                    <div class="card-header d-flex">
+                        <div class="flex-grow-1"><h5>{{details['name']}}</h5></div>
+                        <div class="flex-shrink-1"><h5>{{details['temp']}} C°</h5></div>
+                    </div>
+                    <ul class="list-group list-group-flush bg-dark">
+                        <li class="list-group-item">Local IP: {{details['local_ip']}}</li>
+                        <li class="list-group-item">Gathering Map: {{details['gathering_map']}}</li>
+                        <li class="list-group-item">Avg Silver per Month: {{ avg_year }}M</li>
+                        <li class="list-group-item">Avg CLP per Month: ${{ avg_year*450 }}</li>
+                    </ul>
+                </div>
+            </span>
             <div>
-                <canvas id="myChart"></canvas>
+                <canvas class="p-5" id="myChart"></canvas>
             </div>
         </div>
     </main>
@@ -56,7 +64,7 @@
         let labels_list = []
         let data_list = []
 
-        {% for month, avg in avg_this_year.items() %}
+        {% for month, avg in total_this_year.items() %}
             labels_list.push('{{month}}')
             data_list.push({{avg}})
         {% endfor %}
