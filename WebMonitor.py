@@ -65,6 +65,15 @@ async def delete(request: Request, name: str):
     return RedirectResponse("/", 303)
 
 
+@web_monitor.put("/login_bot/{name}/{local_ip}/{temp}/{gathering_map}")
+async def login_bot(name: str, local_ip: str, temp: int, gathering_map: str):
+    bot_id = database.get_bot_id(name)
+    if bot_id:
+        database.update_bot(name, local_ip, temp, gathering_map)
+    else:
+        database.insert_bot(name, local_ip, temp, gathering_map)
+
+
 @web_monitor.post("/add_transaction/{bot_name}/{quantity}")
 async def add_transaction(bot_name: str, quantity: int):
     database.insert_transaction(quantity, bot_name)

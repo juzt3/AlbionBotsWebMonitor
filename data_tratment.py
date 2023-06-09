@@ -41,4 +41,8 @@ def calculate_total_per_month(transactions, game_format=False):
             avg_year += float(total_per_month[key])
         avg_year /= len(total_per_month)
         avg_year = round(avg_year, 1)
+
+    months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+    total_per_month = dict(sorted(total_per_month.items(), key=lambda x: months.index(x[0])))
+
     return total_per_month, avg_year

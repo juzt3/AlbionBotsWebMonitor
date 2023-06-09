@@ -103,6 +103,16 @@ def delete_bot(name: str):
     conn.close()
 
 
+def update_bot(name: str, local_ip: str, temp: int, gathering_map: str):
+    conn = connect()
+    c = conn.cursor()
+
+    c.execute("""UPDATE Bots SET local_ip = (?), temp = (?), gathering_map = (?)
+                    WHERE name = (?)""", (local_ip, temp, gathering_map, name))
+    conn.commit()
+    conn.close()
+
+
 def update_temp(bot_name: str, new_temp: int):
     """
         Actualiza la temperatura de un bot en la tabla "Bots".
@@ -139,6 +149,31 @@ def insert_transaction(quantity: int, bot_name: str, date=None):
         date = datetime.datetime.now()
     bot_id = get_bot_id(bot_name)
     c.execute("""INSERT INTO Transactions VALUES (datetime(?),?,?)""", (date, quantity, bot_id))
+    conn.commit()
+    conn.close()
+
+
+def insert_batch_transactions(transactions_list):
+    """
+        Inserta una lista de transacciones en la tabla "Transactions" asociada a un bot.
+
+        El formato esperado es:
+        transaction_list = [(bot_name, quantity)]
+
+        Esta funcíon se usa cuando una serie de transacciones no han sido ingresadas en la base de datos
+        y el cliente manda una lista de las transacciones que no ha podido guardar ya sea por que el servidor
+        no esta disponible o hay algun problema con la red.
+    """
+    conn = connect()
+    bot_name = transactions_list[0][0]
+    bot_id = get_bot_id(bot_name)
+    date = datetime.datetime.now()
+    t_ready = list()
+    for transaction in transactions_list:
+        t_ready.append((date, transaction[1], bot_id))
+
+    conn.execute("BEGIN")
+    conn.executemany("INSERT INTO Transactions VALUES (datetime(?),?,?)", t_ready)
     conn.commit()
     conn.close()
 
@@ -192,3 +227,14 @@ def get_bot_id(bot_name: str):
         bot_id = None
     conn.close()
     return bot_id
+
+
+def create_date_transactions_index():
+    """
+    Crea un índice en la columna 'date' de la tabla 'Transactions'.
+    """
+    conn = connect()
+    c = conn.cursor()
+    c.execute("CREATE INDEX idx_transactions_date ON Transactions(date)")
+    conn.commit()
+    conn.close()
