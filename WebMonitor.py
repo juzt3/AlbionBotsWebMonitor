@@ -2,6 +2,7 @@
 import datetime
 import multiprocessing
 
+import numerize.numerize
 # FastAPI modules.
 from fastapi import FastAPI, Request
 from fastapi.templating import Jinja2Templates
@@ -41,8 +42,10 @@ async def bot_details(request: Request, bot_name: str):
     details = database.fetch_bot_details(bot_name)
     current_year = datetime.datetime.now().year
     transactions = database.fetch_transactions_by_year(bot_name, current_year)
-    total_this_year, avg = data_tratment.calculate_total_per_month(transactions, True)
-    return templates.TemplateResponse("bot_details.html", {"request": request, "details": details, "total_this_year": total_this_year, "avg_year": avg})
+    total_this_year, avg = data_tratment.calculate_total_per_month(transactions)
+    clp_avg = avg / 1000000 * 450
+    avg = numerize.numerize.numerize(avg)
+    return templates.TemplateResponse("bot_details.html", {"request": request, "details": details, "total_this_year": total_this_year, "avg_year": avg, "clp_avg": clp_avg})
 
 
 @web_monitor.put("/update_temp/{bot_name}/{new_temp}")

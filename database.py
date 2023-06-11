@@ -14,11 +14,11 @@ def connect():
     else:
         conn = create_tables()
 
-    conn.execute('PRAGMA journal_mode = OFF;')
-    conn.execute('PRAGMA synchronous = 0;')
-    conn.execute('PRAGMA cache_size = 1000000;')  # give it a GB
-    conn.execute('PRAGMA locking_mode = EXCLUSIVE;')
-    conn.execute('PRAGMA temp_store = MEMORY;')
+    #  conn.execute('PRAGMA journal_mode = OFF;')  # Prevents to insert a row
+    #  conn.execute('PRAGMA synchronous = 0;')
+    #  conn.execute('PRAGMA cache_size = 1000000;')  # give it a GB
+    #  conn.execute('PRAGMA locking_mode = EXCLUSIVE;')
+    #  conn.execute('PRAGMA temp_store = MEMORY;')
 
     return conn
 

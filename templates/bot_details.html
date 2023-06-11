@@ -46,8 +46,13 @@
                     <ul class="list-group list-group-flush bg-dark">
                         <li class="list-group-item">Local IP: {{details['local_ip']}}</li>
                         <li class="list-group-item">Gathering Map: {{details['gathering_map']}}</li>
-                        <li class="list-group-item">Avg Silver per Month: {{ avg_year }}M</li>
-                        <li class="list-group-item">Avg CLP per Month: ${{ avg_year * 450 }}</li>
+                        <li class="list-group-item">Avg Silver per Month: {{ avg_year }}</li>
+                        <li class="list-group-item">Avg CLP per Month: ${{ clp_avg }}</li>
+                        <li class="list-group-item">
+                            <form action="/delete/{{details['name']}}" method="post">
+                                <input class="btn btn-danger" type="submit" value="Delete Bot">
+                            </form>
+                        </li>
                     </ul>
                 </div>
             </span>

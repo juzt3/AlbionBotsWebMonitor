@@ -59,19 +59,15 @@
                         {% if loop.index == 1 %}
                             <div class="card-group text-white bg-dark">
                         {% endif %}
-                                <div class="card text-white bg-dark">
-                                    <img src=http://{{images_url[bot['local_ip']]}} class="card-img monitor" alt="None">
+                                <div class="card text-white bg-dark text-right">
                                     <a href="/bot_details/{{bot['name']}}">
-                                        <div class="card-img-overlay text-white">
-                                            <h5 class="card-title">{{bot['name']}}</h5>
-                                            <p class="card-text">{{bot['local_ip']}}</p>
-                                            <form action="/delete/{{bot['name']}}" method="post">
-                                                <input class="btn btn-danger" type="submit" value="Delete">
-                                            </form>
-                                        </div>
+                                        <img src=http://{{images_url[bot['local_ip']]}} class="card-img monitor" alt="None">
                                     </a>
+                                    <div class="card-footer">
+                                        <p class="card-title">{{bot['name']}}</p>
+                                    </div>
                                 </div>
-                        {% if loop.index % 3 == 0 %}
+                        {% if loop.index % 4 == 0 %}
                             </div>
                             {% if loop.index < bots|length %}
                                 <div class="card-group">
