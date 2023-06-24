@@ -214,6 +214,20 @@ def fetch_transactions_by_year(bot_name: str, year: int):
     return transactions
 
 
+def fetch_transactions_by_month(bot_name: str, year: int, month: int):
+    if month < 10:
+        month = "0"+str(month)
+    conn = connect()
+    bot_id = get_bot_id(bot_name)
+    query = """
+            SELECT date, quantity
+            FROM Transactions
+            WHERE strftime('%Y', date) = ? AND strftime('%m', date) = ? AND bot_id = ?
+        """
+    transactions = pd.read_sql_query(query, conn, params=(str(year), month, int(bot_id)))
+    return transactions
+
+
 def get_bot_id(bot_name: str):
     """
         Obtiene el ID de un bot según su nombre en la tabla "Bots".
