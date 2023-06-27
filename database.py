@@ -62,6 +62,21 @@ def fetch_all_bots(in_json=True):
     if in_json:
         rows = json.dumps([dict(ix) for ix in rows])
         rows = json.loads(rows)
+
+    return rows
+
+
+def fetch_bots_name():
+    conn = connect()
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+    c.execute("""SELECT name FROM Bots""")
+    rows = c.fetchall()
+    conn.close()
+
+    rows = json.dumps([dict(ix) for ix in rows])
+    rows = json.loads(rows)
+
     return rows
 
 

@@ -1,4 +1,5 @@
 # Python modules.
+import asyncio
 import datetime
 import pandas as pd
 from pydantic import BaseModel
@@ -6,7 +7,7 @@ import numerize.numerize
 # FastAPI modules.
 from fastapi import FastAPI, Request
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi_frame_stream import FrameStreamer
 
@@ -116,7 +117,7 @@ async def send_frame_from_string(stream_id: str, d: InputImg):
 
 @web_monitor.get("/video_feed/{stream_id}")
 async def video_feed(stream_id: str):
-    return fs.get_stream(stream_id)
+    return fs.get_stream(stream_id, freq=15)
 
 
 @web_monitor.post("/add_transaction/{bot_name}/{quantity}")
@@ -124,9 +125,28 @@ async def add_transaction(bot_name: str, quantity: int):
     database.insert_transaction(quantity, bot_name)
 
 
+async def base64_mix_generator(fps=15):
+    bots_names = database.fetch_bots_name()
+    while True:
+        mix = ''
+        for bot in bots_names:
+            stream_id = bot['name']
+            base64_frame = fs._get_image(stream_id)
+            if base64_frame is not None:
+                mix += f"{stream_id}:{base64_frame}\n"
+        yield mix
+        await asyncio.sleep(1/fps)
+
+
+@web_monitor.get("/base64_stream")
+async def base64_stream():
+    return StreamingResponse(base64_mix_generator(), media_type="text/plain", status_code=206)
+
+
 if __name__ == "__main__":
     uvicorn.run(
         "WebMonitor:web_monitor",
         host="0.0.0.0",
-        port=8084
+        port=8084,
+        log_level="debug"
     )
