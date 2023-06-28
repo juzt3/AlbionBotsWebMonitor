@@ -11,13 +11,20 @@
     <script>
         const streamEndpoint = '/base64_stream';
 
+        function checkImage(base64string) {
+          var src = base64string.replace('data:image/jpeg;base64,', '');
+          var imageData = Uint8Array.from(atob(src), c => c.charCodeAt(0));
+          var imageCorrupted = imageData[imageData.length - 2] === 255 && imageData[imageData.length - 1] === 217;
+          return imageCorrupted;
+        }
+
         const processStreamData = async (data) => {
           // Procesa los datos recibidos aquí
           let dump = data.split(':');
           let id = dump[0];
           let base64_frame = dump[1];
 
-          if (typeof base64_frame !== 'undefined') {
+          if (typeof base64_frame !== 'undefined' && checkImage(base64_frame)) {
             let imgElement = document.getElementById(id);
             if (imgElement) {
               imgElement.src = `data:image/jpeg;base64,${base64_frame}`;
