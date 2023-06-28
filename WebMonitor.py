@@ -132,6 +132,9 @@ async def base64_mix_generator(fps=15):
         for bot in bots_names:
             stream_id = bot['name']
             base64_frame = fs._get_image(stream_id)
+            frame = fs._readb64(base64_frame)
+            if frame is None:
+                continue
             if base64_frame is not None:
                 mix += f"{stream_id}:{base64_frame}\n"
         yield mix
@@ -147,6 +150,6 @@ if __name__ == "__main__":
     uvicorn.run(
         "WebMonitor:web_monitor",
         host="0.0.0.0",
-        port=8084,
-        log_level="debug"
+        port=8082,
+        log_level="info"
     )
