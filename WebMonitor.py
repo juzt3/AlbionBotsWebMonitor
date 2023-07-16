@@ -11,8 +11,10 @@ from fastapi.responses import RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi_frame_stream import FrameStreamer
 
-# Uvicorn modules.
-import uvicorn
+
+# Hypercorn modules.
+from hypercorn.config import Config
+from hypercorn.asyncio import serve
 
 # Own Modules
 import database
@@ -147,9 +149,7 @@ async def base64_stream():
 
 
 if __name__ == "__main__":
-    uvicorn.run(
-        "WebMonitor:web_monitor",
-        host="0.0.0.0",
-        port=8082,
-        log_level="info"
-    )
+    config = Config()
+    config.bind = ["0.0.0.0:8082"]
+
+    asyncio.run(serve(web_monitor, config))

@@ -12,8 +12,13 @@
         const streamEndpoint = '/base64_stream';
 
         function checkImage(base64string) {
-          var src = base64string.replace('data:image/jpeg;base64,', '');
-          var imageData = Uint8Array.from(atob(src), c => c.charCodeAt(0));
+          try {
+            var imageData = Uint8Array.from(atob(base64string), c => c.charCodeAt(0));
+          }
+          catch (error) {
+            console.error(base64string);
+            return false;
+          }
           var imageCorrupted = imageData[imageData.length - 2] === 255 && imageData[imageData.length - 1] === 217;
           return imageCorrupted;
         }
@@ -40,7 +45,8 @@
           const response = await fetch(streamEndpoint);
           const reader = response.body.getReader();
 
-          while (true) {
+          while (!document.hidden) {
+            await sleep(1/30);
             const { done, value } = await reader.read();
             if (done) {
               break;
@@ -56,6 +62,21 @@
             }
           }
         };
+
+        if (typeof document.hidden !== "undefined") {
+          document.addEventListener("visibilitychange", handleVisibilityChange);
+        }
+
+        // Función para manejar el cambio de visibilidad
+        function handleVisibilityChange() {
+          if (!document.hidden) {
+            console.log("pestaña visible");
+            consumeStream();
+          }
+          else {
+            console.log("pestaña oculta");
+          }
+        }
 
         consumeStream();
     </script>
