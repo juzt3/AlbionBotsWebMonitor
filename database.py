@@ -229,7 +229,7 @@ def fetch_transactions_by_year(bot_name: str, year: int):
     return transactions
 
 
-def fetch_transactions_by_month(bot_name: str, year: int, month: int):
+def fetch_transactions_by_month(bot_name: str, year: int, month: int, group_by_day: False):
     if month < 10:
         month = "0"+str(month)
     conn = connect()
@@ -240,7 +240,15 @@ def fetch_transactions_by_month(bot_name: str, year: int, month: int):
             WHERE strftime('%Y', date) = ? AND strftime('%m', date) = ? AND bot_id = ?
         """
     transactions = pd.read_sql_query(query, conn, params=(str(year), month, int(bot_id)))
-    return transactions
+    if not group_by_day:
+        return transactions
+    else:
+        # Convertimos la columna 'date' al tipo datetime para poder manipularla mejor
+        transactions['date'] = pd.to_datetime(transactions['date'])
+
+        # Agrupamos las transacciones por día y sumamos las cantidades para obtener el total por día
+        daily_transactions = transactions.groupby(transactions['date'].dt.date)['quantity'].sum().reset_index()
+        return daily_transactions
 
 
 def get_bot_id(bot_name: str):

@@ -1,7 +1,8 @@
 {% from 'macros.html' import sidebar, svg %}
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html"
+      xmlns="http://www.w3.org/1999/html">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -37,29 +38,45 @@
     <main class="d-flex flex-row">
         {{ sidebar() }}
         <div class="b-example-divider"></div>
-        <div class="d-flex flex-column flex-grow-1 p-5 bg-dark scrollarea" style="--bs-bg-opacity: .94;" id="botDetails">
-            <span class="w-25 rounded-3 shadow bg-light">
-                <div class="card bg-dark text-white" style="--bs-bg-opacity: .95;">
-                    <div class="card-header d-flex">
-                        <div class="flex-grow-1"><h5>{{details['name']}}</h5></div>
-                        <div class="flex-shrink-1"><h5>{{details['temp']}} C°</h5></div>
+        <!-- Area Contenido -->
+        <div class="d-flex flex-column flex-grow-1 scrollarea">
+            <div class="d-flex flex-row flex-grow-1 p-5 bg-dark" style="--bs-bg-opacity: .94;" id="botDetails">
+                <!-- Area Bot Details -->
+                <div class="p-0 rounded-3">
+                    <div class="card bg-dark text-white" style="--bs-bg-opacity: .95;">
+                        <div class="card-header d-flex">
+                            <div class="flex-grow-1"><h5>{{details['name']}}</h5></div>
+                            <div class="flex-shrink-1"><h5>{{details['temp']}} C°</h5></div>
+                        </div>
+                        <ul class="list-group list-group-flush bg-dark">
+                            <li class="list-group-item">Local IP: {{details['local_ip']}}</li>
+                            <li class="list-group-item">Gathering Map: {{details['gathering_map']}}</li>
+                            <li class="list-group-item">Avg Silver per Month: {{ avg_year }}</li>
+                            <li class="list-group-item">Avg CLP per Month: ${{ clp_avg_year }}</li>
+                            <li class="list-group-item">Avg Silver per Day: {{ avg_this_month }}</li>
+                            <li class="list-group-item">
+                                <form action="/delete/{{details['name']}}" method="post">
+                                    <input class="btn btn-danger" type="submit" value="Delete Bot">
+                                </form>
+                            </li>
+                        </ul>
                     </div>
-                    <ul class="list-group list-group-flush bg-dark">
-                        <li class="list-group-item">Local IP: {{details['local_ip']}}</li>
-                        <li class="list-group-item">Gathering Map: {{details['gathering_map']}}</li>
-                        <li class="list-group-item">Avg Silver per Month: {{ avg_year }}</li>
-                        <li class="list-group-item">Avg CLP per Month: ${{ clp_avg_year }}</li>
-                        <li class="list-group-item">Avg Silver per Day: {{ avg_this_month }}</li>
-                        <li class="list-group-item">
-                            <form action="/delete/{{details['name']}}" method="post">
-                                <input class="btn btn-danger" type="submit" value="Delete Bot">
-                            </form>
-                        </li>
-                    </ul>
                 </div>
-            </span>
-            <div>
-                <canvas class="p-5" id="myChart"></canvas>
+                <div class="p-2">
+                    <img src="http://localhost:8082/video_feed/{{details['name']}}" alt="monitor" style="max-height: 300px;">
+                </div>
+            </div>
+
+            <!-- Graficos -->
+            <div class="d-flex flex-column p-5 bg-dark" style="--bs-bg-opacity: .94;">
+                <div class="p-3 text-white text-center">
+                    <h4>Daily Chart</h4>
+                    <canvas id="myChartMonthly"></canvas>
+                </div>
+                <div class="p-3 text-white text-center">
+                    <h4>Monthly Chart</h4>
+                    <canvas id="myChart"></canvas>
+                </div>
             </div>
         </div>
     </main>
@@ -83,6 +100,35 @@
             datasets: [{
               label: 'Silver gained',
               data: data_list,
+              borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+              y: {
+                beginAtZero: true
+              }
+            }
+        }
+        });
+
+        const ctx2 = document.getElementById('myChartMonthly');
+
+        let labels_list2 = []
+        let data_list2 = []
+
+        {% for index, row in data_this_month.iterrows() %}
+            labels_list2.push({{row['date'].day}})
+            data_list2.push({{row['quantity']}})
+        {% endfor %}
+
+        new Chart(ctx2, {
+        type: 'bar',
+        data: {
+            labels: labels_list2,
+            datasets: [{
+              label: 'Silver daily',
+              data: data_list2,
               borderWidth: 1
             }]
         },

@@ -2,6 +2,8 @@
 import asyncio
 import datetime
 import pandas as pd
+import imutils
+import cv2
 from pydantic import BaseModel
 import numerize.numerize
 # FastAPI modules.
@@ -10,7 +12,6 @@ from fastapi.templating import Jinja2Templates
 from fastapi.responses import RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi_frame_stream import FrameStreamer
-
 
 # Hypercorn modules.
 from hypercorn.config import Config
@@ -22,6 +23,7 @@ import data_tratment
 
 web_monitor = FastAPI()
 web_monitor.mount("/styles", StaticFiles(directory="styles"), name="styles")
+web_monitor.mount("/js", StaticFiles(directory="js"), name="js")
 templates = Jinja2Templates(directory="templates")
 fs = FrameStreamer()
 
@@ -56,9 +58,8 @@ async def bot_details(request: Request, bot_name: str):
 
     last_month_silver = list(total_this_year.values())[-1]
     date_now = datetime.datetime.now()
-    first_entry_day = pd.to_datetime(
-        database.fetch_transactions_by_month(bot_name, date_now.year, date_now.month).iloc[0].date
-    ).day
+    data_this_month = database.fetch_transactions_by_month(bot_name, date_now.year, date_now.month, group_by_day=True)
+    first_entry_day = pd.to_datetime(data_this_month.iloc[0].date).day
 
     try:
         avg_this_month = last_month_silver / (datetime.datetime.now().day - first_entry_day)
@@ -75,7 +76,8 @@ async def bot_details(request: Request, bot_name: str):
         "total_this_year": total_this_year,
         "avg_year": avg,
         "clp_avg_year": clp_avg,
-        "avg_this_month": avg_this_month
+        "avg_this_month": avg_this_month,
+        "data_this_month": data_this_month
     })
 
 
@@ -117,35 +119,55 @@ async def send_frame_from_string(stream_id: str, d: InputImg):
     await fs.send_frame(stream_id, d.img_base64str)
 
 
-@web_monitor.get("/video_feed/{stream_id}")
-async def video_feed(stream_id: str):
-    return fs.get_stream(stream_id, freq=15)
-
-
 @web_monitor.post("/add_transaction/{bot_name}/{quantity}")
 async def add_transaction(bot_name: str, quantity: int):
     database.insert_transaction(quantity, bot_name)
 
 
+@web_monitor.get("/video_feed/{stream_id}")
+async def video_feed(stream_id: str):
+    return fs.get_stream(stream_id, freq=15)
+
+
 async def base64_mix_generator(fps=15):
     bots_names = database.fetch_bots_name()
+    sleep_duration = 1.0 / fps
     while True:
+        await asyncio.sleep(sleep_duration)
         mix = ''
         for bot in bots_names:
             stream_id = bot['name']
-            base64_frame = fs._get_image(stream_id)
-            frame = fs._readb64(base64_frame)
-            if frame is None:
-                continue
-            if base64_frame is not None:
+            frame = None
+            try_count = 0
+            while try_count <= 1:
+                try_count += 1
+                try:
+                    # readb64 es un tipo de validador
+                    base64_frame = fs._get_image(stream_id)
+                    frame = fs._readb64(base64_frame)
+                except:
+                    pass
+                if frame is None:
+                    continue
+
+                # Validaciones
+                frame = imutils.resize(frame, width=680)
+                output_frame = frame.copy()
+                if output_frame is None:
+                    continue
+
+                (flag, encodedImage) = cv2.imencode(".jpg", output_frame)
+                if not flag:
+                    continue
+
                 mix += f"{stream_id}:{base64_frame}\n"
+        mix = mix[:-1]  # Esto eliminará el último carácter, que es el '\n'
         yield mix
-        await asyncio.sleep(1/fps)
 
 
 @web_monitor.get("/base64_stream")
 async def base64_stream():
-    return StreamingResponse(base64_mix_generator(), media_type="text/plain", status_code=206)
+    return StreamingResponse(base64_mix_generator(5), media_type="text/plain", status_code=206)
 
 
 if __name__ == "__main__":
