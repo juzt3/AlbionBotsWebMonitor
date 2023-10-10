@@ -2,32 +2,24 @@ const streamEndpoint = '/base64_stream';
 let controller = new AbortController(); // Crear un nuevo controlador de aborto
 
 function checkImage(base64string) {
-  let imageData;
   try {
-    imageData = Uint8Array.from(atob(base64string), c => c.charCodeAt(0));
+    const imageData = Uint8Array.from(atob(base64string), c => c.charCodeAt(0));
+    return imageData[imageData.length - 2] === 255 && imageData[imageData.length - 1] === 217;
   }
   catch (error) {
     return false;
   }
-  let imageCorrupted = imageData[imageData.length - 2] === 255 && imageData[imageData.length - 1] === 217;
-  imageData = null;
-  return imageCorrupted;
 }
 
 const processStreamData = async (data) => {
   // Procesa los datos recibidos aquí
-  let dump = data.split(':');
-  let id = dump[0];
-  let base64_frame = dump[1];
+  const [id, base64_frame] = data.split(':');
 
   if (checkImage(base64_frame)) {
-    let imgElement = document.getElementById(id);
+    const imgElement = document.getElementById(id);
     if (imgElement) {
       imgElement.src = `data:image/jpeg;base64,${base64_frame}`;
     }
-    dump = null;
-    id = null;
-    base64_frame = null;
   }
 };
 
@@ -36,8 +28,8 @@ const consumeStream = async () => {
 
   try {
     const response = await fetch(streamEndpoint, { signal }); // Pasar la señal al fetch
-    const reader = response.body.getReader();
-
+    let reader = response.body.getReader();
+    
     while (!signal.aborted) {
       const { done, value } = await reader.read();
       if (done) {
@@ -70,6 +62,7 @@ if (typeof document.hidden !== "undefined") {
 
 function handleVisibilityChange() {
   if (!document.hidden || document.visibilityState === 'visible') {
+    controller.abort();
     controller = new AbortController();
     consumeStream();
   } else {
