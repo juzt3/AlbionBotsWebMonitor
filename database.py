@@ -229,7 +229,7 @@ def fetch_transactions_by_year(bot_name: str, year: int):
     return transactions
 
 
-def fetch_transactions_by_month(bot_name: str, year: int, month: int, group_by_day: False):
+def fetch_transactions_by_month(bot_name: str, year: int, month: int, group_by_day=False):
     if month < 10:
         month = "0"+str(month)
     conn = connect()
@@ -239,7 +239,7 @@ def fetch_transactions_by_month(bot_name: str, year: int, month: int, group_by_d
             FROM Transactions
             WHERE strftime('%Y', date) = ? AND strftime('%m', date) = ? AND bot_id = ?
         """
-    transactions = pd.read_sql_query(query, conn, params=(str(year), month, int(bot_id)))
+    transactions = pd.read_sql_query(query, conn, params=(str(year), str(month), int(bot_id)))
     if not group_by_day:
         return transactions
     else:
