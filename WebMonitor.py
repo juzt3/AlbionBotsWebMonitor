@@ -139,7 +139,7 @@ async def base64_mix_generator(fps=15):
             stream_id = bot['name']
             frame = None
             try_count = 0
-            while try_count <= 1:
+            while try_count <= 5:
                 try_count += 1
                 try:
                     # readb64 es un tipo de validador
