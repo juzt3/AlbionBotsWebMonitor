@@ -31,10 +31,11 @@ fs = FrameStreamer()
 @web_monitor.get("/")
 async def root(request: Request):
     bots = database.fetch_all_bots()
+    bots = sorted(bots, key=lambda x: x['name'])
     images_url = dict()
     for bot in bots:
         local_ip = bot['local_ip']
-        images_url[local_ip] = f'{local_ip}:8000/client'
+        images_url[local_ip] = f'{local_ip}:8082/client'
 
     header = {"Cache-Control": "no-cache, no-store, must-revalidate",
               "Pragma": "no-cache",
@@ -104,10 +105,10 @@ async def delete(request: Request, name: str):
 @web_monitor.put("/login_bot/{name}/{local_ip}/{temp}/{gathering_map}")
 async def login_bot(name: str, local_ip: str, temp: int, gathering_map: str):
     bot_id = database.get_bot_id(name)
-    if bot_id:
+    if bot_id is not None:
         database.update_bot(name, local_ip, temp, gathering_map)
     else:
-        database.insert_bot(name, local_ip, temp, gathering_map)
+        database.insert_bot(name, local_ip, 0, gathering_map)
 
 
 class InputImg(BaseModel):
