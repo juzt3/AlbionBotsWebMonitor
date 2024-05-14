@@ -24,6 +24,7 @@ import data_tratment
 web_monitor = FastAPI()
 web_monitor.mount("/styles", StaticFiles(directory="styles"), name="styles")
 web_monitor.mount("/js", StaticFiles(directory="js"), name="js")
+web_monitor.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 fs = FrameStreamer()
 
