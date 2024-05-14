@@ -102,13 +102,20 @@ async def delete(request: Request, name: str):
     return RedirectResponse("/", 303)
 
 
-@web_monitor.put("/login_bot/{name}/{local_ip}/{temp}/{gathering_map}")
-async def login_bot(name: str, local_ip: str, temp: int, gathering_map: str):
+class Login(BaseModel):
+    ip: str
+    temp: int
+    gathering_map: str
+
+
+@web_monitor.put("/login_bot/{name}")
+async def login_bot(name: str, details: Login):
     bot_id = database.get_bot_id(name)
     if bot_id is not None:
-        database.update_bot(name, local_ip, temp, gathering_map)
+        database.update_bot(name, details.ip, details.temp, details.gathering_map)
     else:
-        database.insert_bot(name, local_ip, 0, gathering_map)
+        database.insert_bot(name, details.ip, 0, details.gathering_map)
+        database.insert_transaction(0, name)
 
 
 class InputImg(BaseModel):
