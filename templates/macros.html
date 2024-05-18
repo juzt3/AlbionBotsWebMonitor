@@ -1,5 +1,6 @@
 {% macro sidebar() %}
-    <div class="sidebar d-flex flex-column flex-shrink-0 p-3 text-white bg-dark" style="width: 200px;">
+    <!-- Barra lateral visible en dispositivos grandes -->
+    <div class="sidebar d-none d-md-flex flex-column flex-shrink-0 p-3 text-white bg-dark" style="width: 200px;">
         <a href="/" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-white text-decoration-none">
             <svg class="bi me-2" width="40" height="32"><use xlink:href="#bootstrap"></use></svg>
             <span class="fs-4">Albion Bot Monitor</span>
@@ -33,7 +34,57 @@
                 <li><a class="dropdown-item" href="#">Sign out</a></li>
             </ul>
         </div>
-      </div>
+    </div>
+
+    <!-- Offcanvas para dispositivos pequeños -->
+    <div class="offcanvas offcanvas-start bg-dark text-white" tabindex="-1" id="sidebarOffcanvas" aria-labelledby="sidebarOffcanvasLabel">
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="sidebarOffcanvasLabel">Albion Bot Monitor</h5>
+            <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body d-flex flex-column p-3">
+            <a href="/" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-white text-decoration-none">
+                <svg class="bi me-2" width="40" height="32"><use xlink:href="#bootstrap"></use></svg>
+                <span class="fs-4">Albion Bot Monitor</span>
+            </a>
+            <hr>
+            <ul class="nav nav-pills flex-column mb-auto">
+                <li class="nav-item">
+                    <a href="/" class="nav-link text-white">
+                        <svg class="bi me-2" width="16" height="16"><use xlink:href="#grid"></use></svg>
+                        Monitor Grid
+                    </a>
+                </li>
+                <li>
+                    <a href="#" class="nav-link text-white">
+                      <svg class="bi me-2" width="16" height="16"><use xlink:href="#speedometer2"></use></svg>
+                      Dashboard
+                    </a>
+                </li>
+            </ul>
+            <hr>
+            <div class="dropdown">
+                <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" id="dropdownUser1" data-bs-toggle="dropdown" aria-expanded="false">
+                    <img src="https://avatars.githubusercontent.com/u/8704190?v=4" alt="" width="32" height="32" class="rounded-circle me-2">
+                    <strong>Paragati</strong>
+                </a>
+                <ul class="dropdown-menu dropdown-menu-dark text-small shadow" aria-labelledby="dropdownUser1" style="">
+                    <li><a class="dropdown-item" href="#">New project...</a></li>
+                    <li><a class="dropdown-item" href="#">Settings</a></li>
+                    <li><a class="dropdown-item" href="#">Profile</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="#">Sign out</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Botón para abrir la barra lateral en dispositivos pequeños -->
+    <div class="d-md-none fixed-bottom p-2 bg-dark text-center">
+        <button class="btn btn-primary btn-sm" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarOffcanvas" aria-controls="sidebarOffcanvas">
+            Open Sidebar
+        </button>
+    </div>
 {% endmacro %}
 
 {% macro svg() %}
