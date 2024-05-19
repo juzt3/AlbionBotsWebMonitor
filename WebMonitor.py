@@ -98,7 +98,7 @@ async def add(request: Request):
 
 
 @web_monitor.post("/delete/{name}")
-async def delete(request: Request, name: str):
+async def delete(name: str):
     database.delete_bot(name)
     return RedirectResponse("/", 303)
 
