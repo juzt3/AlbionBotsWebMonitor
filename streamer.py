@@ -185,8 +185,8 @@ class FrameStreamer:
                 if not flag:
                     continue
 
-                mix += f"{stream_id}:{base64_frame}\n"
+                mix += f"{stream_id}:{base64_frame} "
 
-            # Elimina el último '\n'
-            mix = mix.rstrip('\n')
+            # Elimina el último espacio ' '
+            mix = mix.rstrip(' ')
             yield mix
