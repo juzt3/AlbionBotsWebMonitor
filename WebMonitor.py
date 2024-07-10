@@ -11,7 +11,6 @@ from fastapi import FastAPI, Request
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi_frame_stream import FrameStreamer
 
 # Hypercorn modules.
 from hypercorn.config import Config
@@ -20,6 +19,7 @@ from hypercorn.asyncio import serve
 # Own Modules
 import database
 import data_tratment
+from streamer import FrameStreamer
 
 web_monitor = FastAPI()
 web_monitor.mount("/styles", StaticFiles(directory="styles"), name="styles")
@@ -135,48 +135,12 @@ async def add_transaction(bot_name: str, quantity: int):
 
 @web_monitor.get("/video_feed/{stream_id}")
 async def video_feed(stream_id: str):
-    return fs.get_stream(stream_id, freq=15)
-
-
-async def base64_mix_generator(fps=15):
-    bots_names = database.fetch_bots_name()
-    sleep_duration = 1.0 / fps
-    while True:
-        await asyncio.sleep(sleep_duration)
-        mix = ''
-        for bot in bots_names:
-            stream_id = bot['name']
-            frame = None
-            try_count = 0
-            while try_count <= 5:
-                try_count += 1
-                try:
-                    # readb64 es un tipo de validador
-                    base64_frame = fs._get_image(stream_id)
-                    frame = fs._readb64(base64_frame)
-                except:
-                    pass
-                if frame is None:
-                    continue
-
-                # Validaciones
-                frame = imutils.resize(frame, width=680)
-                output_frame = frame.copy()
-                if output_frame is None:
-                    continue
-
-                (flag, encodedImage) = cv2.imencode(".jpg", output_frame)
-                if not flag:
-                    continue
-
-                mix += f"{stream_id}:{base64_frame}\n"
-        mix = mix[:-1]  # Esto eliminará el último carácter, que es el '\n'
-        yield mix
+    return fs.get_stream(stream_id, freq=5)
 
 
 @web_monitor.get("/base64_stream")
 async def base64_stream():
-    return StreamingResponse(base64_mix_generator(5), media_type="text/plain", status_code=206)
+    return StreamingResponse(fs.base64_mix_generator(database.fetch_bots_name(), fps=5), media_type="multipart/x-mixed-replace;boundary=frame", status_code=206)
 
 
 if __name__ == "__main__":

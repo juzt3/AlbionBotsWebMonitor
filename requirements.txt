@@ -7,7 +7,6 @@ dnspython==2.6.1
 email_validator==2.1.1
 fastapi==0.111.0
 fastapi-cli==0.0.3
-fastapi-frame-stream==0.1.1
 h11==0.14.0
 h2==4.1.0
 hpack==4.0.0
