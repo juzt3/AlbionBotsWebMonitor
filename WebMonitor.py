@@ -130,4 +130,4 @@ def base64_stream():
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(web_monitor, port=8080)
+    uvicorn.run(web_monitor, host='0.0.0.0', port=8082)
