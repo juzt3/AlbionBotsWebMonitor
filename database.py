@@ -244,7 +244,7 @@ def fetch_transactions_by_month(bot_name: str, year: int, month: int, group_by_d
         return transactions
     else:
         # Convertimos la columna 'date' al tipo datetime para poder manipularla mejor
-        transactions['date'] = pd.to_datetime(transactions['date'])
+        transactions.__setitem__('date', pd.to_datetime(transactions.__getitem__('date')))
 
         # Agrupamos las transacciones por día y sumamos las cantidades para obtener el total por día
         daily_transactions = transactions.groupby(transactions['date'].dt.date)['quantity'].sum().reset_index()

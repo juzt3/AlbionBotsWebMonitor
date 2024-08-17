@@ -5,7 +5,7 @@ function checkImage(base64string) {
   if (base64string.length % 4 !== 0) {
     return false;
   }
-  
+
   try {
     const imageData = Uint8Array.from(atob(base64string), c => c.charCodeAt(0));
     return imageData[imageData.length - 2] === 255 && imageData[imageData.length - 1] === 217;

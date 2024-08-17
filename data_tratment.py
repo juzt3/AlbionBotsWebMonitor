@@ -2,6 +2,8 @@ import datetime
 import numerize.numerize as nz
 import pandas as pd
 
+pd.options.mode.copy_on_write = True
+
 
 def parse_datetime(datestr: str):
     return datetime.datetime.strptime(datestr, "%Y-%m-%d %H:%M:%S")
@@ -30,8 +32,8 @@ def calculate_total_per_month(transactions, game_format=False):
     """
     Calcula el total de cantidad por mes a partir de las transacciones proporcionadas.
     """
-    transactions['date'] = pd.to_datetime(transactions['date'])
-    transactions['month'] = transactions['date'].dt.strftime('%B')
+    transactions.__setitem__('date', pd.to_datetime(transactions['date']))
+    transactions.__setitem__('month', transactions['date'].dt.strftime('%B'))
     total_per_month = transactions.groupby('month')['quantity'].sum().to_dict()
     avg_year = 0
     for key, avg in total_per_month.items():

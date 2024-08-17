@@ -1,10 +1,6 @@
 # Python modules.
-import asyncio
 import datetime
 import pandas as pd
-import imutils
-import cv2
-from pydantic import BaseModel
 import numerize.numerize
 # FastAPI modules.
 from fastapi import FastAPI, Request
@@ -12,14 +8,12 @@ from fastapi.templating import Jinja2Templates
 from fastapi.responses import RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
-# Hypercorn modules.
-from hypercorn.config import Config
-from hypercorn.asyncio import serve
-
 # Own Modules
 import database
 import data_tratment
 from streamer import FrameStreamer
+from schemas.login import LoginSchema
+from schemas.image import InputImgSchema
 
 web_monitor = FastAPI()
 web_monitor.mount("/styles", StaticFiles(directory="styles"), name="styles")
@@ -30,7 +24,7 @@ fs = FrameStreamer()
 
 
 @web_monitor.get("/")
-async def root(request: Request):
+def frontend(request: Request):
     bots = database.fetch_all_bots()
     bots = sorted(bots, key=lambda x: x['name'])
     images_url = dict()
@@ -51,7 +45,7 @@ async def root(request: Request):
 
 
 @web_monitor.get("/bot_details/{bot_name}")
-async def bot_details(request: Request, bot_name: str):
+def bot_details(request: Request, bot_name: str):
     details = database.fetch_bot_details(bot_name)
     current_year = datetime.datetime.now().year
     transactions = database.fetch_transactions_by_year(bot_name, current_year)
@@ -84,7 +78,7 @@ async def bot_details(request: Request, bot_name: str):
 
 
 @web_monitor.put("/update_temp/{bot_name}/{new_temp}")
-async def update_temp(bot_name: str, new_temp: int):
+def update_temp(bot_name: str, new_temp: int):
     database.update_temp(bot_name, new_temp)
 
 
@@ -98,19 +92,13 @@ async def add(request: Request):
 
 
 @web_monitor.post("/delete/{name}")
-async def delete(name: str):
+def delete(name: str):
     database.delete_bot(name)
     return RedirectResponse("/", 303)
 
 
-class Login(BaseModel):
-    ip: str
-    temp: int
-    gathering_map: str
-
-
 @web_monitor.put("/login_bot/{name}")
-async def login_bot(name: str, details: Login):
+def login_bot(name: str, details: LoginSchema):
     bot_id = database.get_bot_id(name)
     if bot_id is not None:
         database.update_bot(name, details.ip, details.temp, details.gathering_map)
@@ -119,32 +107,27 @@ async def login_bot(name: str, details: Login):
         database.insert_transaction(0, name)
 
 
-class InputImg(BaseModel):
-    img_base64str: str
-
-
 @web_monitor.post("/send_frame_from_string/{stream_id}")
-async def send_frame_from_string(stream_id: str, d: InputImg):
+async def send_frame_from_string(stream_id: str, d: InputImgSchema):
     await fs.send_frame(stream_id, d.img_base64str)
 
 
 @web_monitor.post("/add_transaction/{bot_name}/{quantity}")
-async def add_transaction(bot_name: str, quantity: int):
+def add_transaction(bot_name: str, quantity: int):
     database.insert_transaction(quantity, bot_name)
 
 
 @web_monitor.get("/video_feed/{stream_id}")
-async def video_feed(stream_id: str):
+def video_feed(stream_id: str):
     return fs.get_stream(stream_id, freq=5)
 
 
 @web_monitor.get("/base64_stream")
-async def base64_stream():
+def base64_stream():
     return StreamingResponse(fs.base64_mix_generator(database.fetch_bots_name(), fps=5), media_type="multipart/x-mixed-replace;boundary=frame", status_code=206)
 
 
 if __name__ == "__main__":
-    config = Config()
-    config.bind = ["0.0.0.0:8082"]
+    import uvicorn
 
-    asyncio.run(serve(web_monitor, config))
+    uvicorn.run(web_monitor, port=8080)
