@@ -208,8 +208,6 @@ async def fetch_transactions_by_year(bot_name: str, year: int):
     """
     Obtiene las transacciones de un año específico y un bot_id dado directamente de la base de datos.
     """
-    print(bot_name)
-    print(year)
     conn = await connect()
     bot_id = await get_bot_id(bot_name)
     query = """
@@ -257,7 +255,11 @@ async def get_bot_id(bot_name: str):
     conn = await connect()
     c = await conn.execute("""SELECT rowid FROM Bots WHERE name = (?)""", [bot_name])
     try:
-        bot_id = await c.fetchone()[0]
+        result = await c.fetchone()
+        if result is None:
+            bot_id = None
+        else:
+            bot_id = result[0]
     except TypeError:
         bot_id = None
     await conn.close()

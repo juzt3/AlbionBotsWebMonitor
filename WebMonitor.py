@@ -52,16 +52,19 @@ async def bot_details(request: Request, bot_name: str):
     total_this_year, avg = data_tratment.calculate_total_per_month(transactions)
     clp_avg = avg / 1000000 * 450
 
-    last_month_silver = list(total_this_year.values())[-1]
-    date_now = datetime.datetime.now()
-    data_this_month = await database.fetch_transactions_by_month(bot_name, date_now.year, date_now.month, group_by_day=True)
-    first_entry_day = pd.to_datetime(data_this_month.iloc[0].date).day
+    if len(list(total_this_year.values())) > 0:
+        last_month_silver = list(total_this_year.values())[-1]
+        date_now = datetime.datetime.now()
+        data_this_month = await database.fetch_transactions_by_month(bot_name, date_now.year, date_now.month, group_by_day=True)
+        first_entry_day = pd.to_datetime(data_this_month.iloc[0].date).day
 
-    try:
-        avg_this_month = last_month_silver / (datetime.datetime.now().day - first_entry_day)
-    except ZeroDivisionError:
+        try:
+            avg_this_month = last_month_silver / (datetime.datetime.now().day - first_entry_day)
+        except ZeroDivisionError:
+            avg_this_month = 0
+    else:
         avg_this_month = 0
-
+        data_this_month = pd.DataFrame()
     # Numerize
     avg = numerize.numerize.numerize(avg)
     avg_this_month = numerize.numerize.numerize(avg_this_month)
