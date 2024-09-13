@@ -24,8 +24,8 @@ fs = FrameStreamer()
 
 
 @web_monitor.get("/")
-def frontend(request: Request):
-    bots = database.fetch_all_bots()
+async def frontend(request: Request):
+    bots = await database.fetch_all_bots()
     bots = sorted(bots, key=lambda x: x['name'])
     images_url = dict()
     for bot in bots:
@@ -45,16 +45,16 @@ def frontend(request: Request):
 
 
 @web_monitor.get("/bot_details/{bot_name}")
-def bot_details(request: Request, bot_name: str):
-    details = database.fetch_bot_details(bot_name)
+async def bot_details(request: Request, bot_name: str):
+    details = await database.fetch_bot_details(bot_name)
     current_year = datetime.datetime.now().year
-    transactions = database.fetch_transactions_by_year(bot_name, current_year)
+    transactions = await database.fetch_transactions_by_year(bot_name, current_year)
     total_this_year, avg = data_tratment.calculate_total_per_month(transactions)
     clp_avg = avg / 1000000 * 450
 
     last_month_silver = list(total_this_year.values())[-1]
     date_now = datetime.datetime.now()
-    data_this_month = database.fetch_transactions_by_month(bot_name, date_now.year, date_now.month, group_by_day=True)
+    data_this_month = await database.fetch_transactions_by_month(bot_name, date_now.year, date_now.month, group_by_day=True)
     first_entry_day = pd.to_datetime(data_this_month.iloc[0].date).day
 
     try:
@@ -78,8 +78,8 @@ def bot_details(request: Request, bot_name: str):
 
 
 @web_monitor.put("/update_temp/{bot_name}/{new_temp}")
-def update_temp(bot_name: str, new_temp: int):
-    database.update_temp(bot_name, new_temp)
+async def update_temp(bot_name: str, new_temp: int):
+    await database.update_temp(bot_name, new_temp)
 
 
 @web_monitor.post("/add")
@@ -87,24 +87,24 @@ async def add(request: Request):
     form_data = await request.form()
     name = form_data['name']
     ip = form_data['ip']
-    database.insert_bot(name, ip, 0, "Unknown")
+    await database.insert_bot(name, ip, 0, "Unknown")
     return RedirectResponse("/", 303)
 
 
 @web_monitor.post("/delete/{name}")
-def delete(name: str):
-    database.delete_bot(name)
+async def delete(name: str):
+    await database.delete_bot(name)
     return RedirectResponse("/", 303)
 
 
 @web_monitor.put("/login_bot/{name}")
-def login_bot(name: str, details: LoginSchema):
-    bot_id = database.get_bot_id(name)
+async def login_bot(name: str, details: LoginSchema):
+    bot_id = await database.get_bot_id(name)
     if bot_id is not None:
-        database.update_bot(name, details.ip, details.temp, details.gathering_map)
+        await database.update_bot(name, details.ip, details.temp, details.gathering_map)
     else:
-        database.insert_bot(name, details.ip, 0, details.gathering_map)
-        database.insert_transaction(0, name)
+        await database.insert_bot(name, details.ip, 0, details.gathering_map)
+        await database.insert_transaction(0, name)
 
 
 @web_monitor.post("/send_frame_from_string/{stream_id}")
@@ -113,8 +113,8 @@ async def send_frame_from_string(stream_id: str, d: InputImgSchema):
 
 
 @web_monitor.post("/add_transaction/{bot_name}/{quantity}")
-def add_transaction(bot_name: str, quantity: int):
-    database.insert_transaction(quantity, bot_name)
+async def add_transaction(bot_name: str, quantity: int):
+    await database.insert_transaction(quantity, bot_name)
 
 
 @web_monitor.get("/video_feed/{stream_id}")
@@ -123,11 +123,11 @@ def video_feed(stream_id: str):
 
 
 @web_monitor.get("/base64_stream")
-def base64_stream():
-    return StreamingResponse(fs.base64_mix_generator(database.fetch_bots_name(), fps=5), media_type="multipart/x-mixed-replace;boundary=frame", status_code=206)
+async def base64_stream():
+    return StreamingResponse(fs.base64_mix_generator(await database.fetch_bots_name(), fps=5), media_type="multipart/x-mixed-replace;boundary=frame", status_code=206)
 
 
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(web_monitor, host='0.0.0.0', port=8082)
+    uvicorn.run(web_monitor, host='0.0.0.0', port=8080, log_level='warning')

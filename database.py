@@ -3,16 +3,17 @@ import sqlite3
 import os.path
 import json
 import pandas as pd
+import aiosqlite
 
 
-def connect():
+async def connect():
     """
         Establece una conexión con la base de datos o crea una nueva si no existe.
     """
     if os.path.isfile("./bots.db"):
-        conn = sqlite3.connect("bots.db")
+        conn = await aiosqlite.connect("bots.db")
     else:
-        conn = create_tables()
+        conn = await create_tables()
 
     #  conn.execute('PRAGMA journal_mode = OFF;')  # Prevents to insert a row
     #  conn.execute('PRAGMA synchronous = 0;')
@@ -23,41 +24,39 @@ def connect():
     return conn
 
 
-def create_tables():
+async def create_tables():
     """
         Crea las tablas "Bots" y "Transactions" en la base de datos.
     """
-    conn = sqlite3.connect("bots.db")
-    c = conn.cursor()
+    conn = await aiosqlite.connect("bots.db")
 
-    c.execute("""CREATE TABLE IF NOT EXISTS Bots (
+    await conn.execute("""CREATE TABLE IF NOT EXISTS Bots (
         name TEXT,
         local_ip TEXT,
         temp INTEGER,
         gathering_map TEXT
     )""")
 
-    c.execute("""CREATE TABLE IF NOT EXISTS Transactions (
+    await conn.execute("""CREATE TABLE IF NOT EXISTS Transactions (
             date TEXT,
             quantity INTEGER,
             bot_id INTEGER
     )""")
 
-    conn.commit()
+    await conn.commit()
     return conn
 
 
-def fetch_all_bots(in_json=True):
+async def fetch_all_bots(in_json=True):
     """
         Devuelve todos las entradas de la tabla "Bots".
     """
-    conn = connect()
+    conn = await connect()
     if in_json:
         conn.row_factory = sqlite3.Row
-    c = conn.cursor()
-    c.execute("""SELECT * FROM Bots""")
-    rows = c.fetchall()
-    conn.close()
+    c = await conn.execute("""SELECT * FROM Bots""")
+    rows = await c.fetchall()
+    await conn.close()
 
     if in_json:
         rows = json.dumps([dict(ix) for ix in rows])
@@ -66,13 +65,12 @@ def fetch_all_bots(in_json=True):
     return rows
 
 
-def fetch_bots_name():
-    conn = connect()
+async def fetch_bots_name():
+    conn = await connect()
     conn.row_factory = sqlite3.Row
-    c = conn.cursor()
-    c.execute("""SELECT name FROM Bots""")
-    rows = c.fetchall()
-    conn.close()
+    c = await conn.execute("""SELECT name FROM Bots""")
+    rows = await c.fetchall()
+    await conn.close()
 
     rows = json.dumps([dict(ix) for ix in rows])
     rows = json.loads(rows)
@@ -80,14 +78,13 @@ def fetch_bots_name():
     return rows
 
 
-def fetch_bot_details(bot_name: str, in_json=True):
-    conn = connect()
+async def fetch_bot_details(bot_name: str, in_json=True):
+    conn = await connect()
     if in_json:
         conn.row_factory = sqlite3.Row
-    c = conn.cursor()
-    c.execute("""SELECT * FROM Bots WHERE name = (?)""", [bot_name])
-    rows = c.fetchall()
-    conn.close()
+    c = await conn.execute("""SELECT * FROM Bots WHERE name = (?)""", [bot_name])
+    rows = await c.fetchall()
+    await conn.close()
 
     if in_json:
         rows = json.dumps([dict(ix) for ix in rows])
@@ -95,80 +92,74 @@ def fetch_bot_details(bot_name: str, in_json=True):
     return rows[0]
 
 
-def insert_bot(name: str, local_ip: str, temp: int, gathering_map: str):
+async def insert_bot(name: str, local_ip: str, temp: int, gathering_map: str):
     """
         Inserta un nuevo bot en la tabla "Bots".
     """
-    conn = connect()
-    c = conn.cursor()
+    conn = await connect()
 
-    c.execute("""INSERT INTO Bots VALUES (?,?,?,?)""", (name, local_ip, temp, gathering_map))
-    conn.commit()
-    conn.close()
+    await conn.execute("""INSERT INTO Bots VALUES (?,?,?,?)""", (name, local_ip, temp, gathering_map))
+    await conn.commit()
+    await conn.close()
 
 
-def delete_bot(name: str):
+async def delete_bot(name: str):
     """
         Borra un bot de la tabla "Bots".
     """
-    conn = connect()
-    c = conn.cursor()
-    c.execute("""DELETE FROM Bots WHERE name = (?)""", [name])
-    conn.commit()
-    conn.close()
+    conn = await connect()
+    await conn.execute("""DELETE FROM Bots WHERE name = (?)""", [name])
+    await conn.commit()
+    await conn.close()
 
 
-def update_bot(name: str, local_ip: str, temp: int, gathering_map: str):
-    conn = connect()
-    c = conn.cursor()
+async def update_bot(name: str, local_ip: str, temp: int, gathering_map: str):
+    conn = await connect()
 
-    c.execute("""UPDATE Bots SET local_ip = (?), temp = (?), gathering_map = (?)
+    await conn.execute("""UPDATE Bots SET local_ip = (?), temp = (?), gathering_map = (?)
                     WHERE name = (?)""", (local_ip, temp, gathering_map, name))
-    conn.commit()
-    conn.close()
+    await conn.commit()
+    await conn.close()
 
 
-def update_temp(bot_name: str, new_temp: int):
+async def update_temp(bot_name: str, new_temp: int):
     """
         Actualiza la temperatura de un bot en la tabla "Bots".
     """
-    conn = connect()
-    c = conn.cursor()
+    conn = await connect()
 
-    c.execute("""UPDATE Bots SET temp = (?)
+    await conn.execute("""UPDATE Bots SET temp = (?)
                 WHERE name = (?)""", (new_temp, bot_name))
-    conn.commit()
-    conn.close()
+    await conn.commit()
+    await conn.close()
 
 
-def update_local_ip(bot_name: str, new_ip: str):
+async def update_local_ip(bot_name: str, new_ip: str):
     """
         Actualiza la dirección IP local de un bot en la tabla "Bots".
     """
-    conn = connect()
-    c = conn.cursor()
+    conn = await connect()
 
-    c.execute("""UPDATE Bots SET local_ip = (?)
+    conn.execute("""UPDATE Bots SET local_ip = (?)
                     WHERE name = (?)""", (new_ip, bot_name))
-    conn.commit()
-    conn.close()
+    await conn.commit()
+    await conn.close()
 
 
-def insert_transaction(quantity: int, bot_name: str, date=None):
+async def insert_transaction(quantity: int, bot_name: str, date=None):
     """
         Inserta una nueva transacción en la tabla "Transactions" asociada a un bot.
     """
-    conn = connect()
-    c = conn.cursor()
+    conn = await connect()
     if date is None:
         date = datetime.datetime.now()
-    bot_id = get_bot_id(bot_name)
-    c.execute("""INSERT INTO Transactions VALUES (datetime(?),?,?)""", (date, quantity, bot_id))
-    conn.commit()
-    conn.close()
+    bot_id = await get_bot_id(bot_name)
+    await conn.execute("""INSERT INTO Transactions VALUES (datetime(?),?,?)""", (date, quantity, bot_id))
+    await conn.commit()
+    await conn.close()
 
 
-def insert_batch_transactions(transactions_list):
+async def insert_batch_transactions(transactions_list):
     """
         Inserta una lista de transacciones en la tabla "Transactions" asociada a un bot.
 
@@ -179,67 +170,75 @@ def insert_batch_transactions(transactions_list):
         y el cliente manda una lista de las transacciones que no ha podido guardar ya sea por que el servidor
         no esta disponible o hay algun problema con la red.
     """
-    conn = connect()
+    conn = await connect()
     bot_name = transactions_list[0][0]
-    bot_id = get_bot_id(bot_name)
+    bot_id = await get_bot_id(bot_name)
     date = datetime.datetime.now()
     t_ready = list()
     for transaction in transactions_list:
         t_ready.append((date, transaction[1], bot_id))
 
-    conn.execute("BEGIN")
-    conn.executemany("INSERT INTO Transactions VALUES (datetime(?),?,?)", t_ready)
-    conn.commit()
-    conn.close()
+    await conn.execute("BEGIN")
+    await conn.executemany("INSERT INTO Transactions VALUES (datetime(?),?,?)", t_ready)
+    await conn.commit()
+    await conn.close()
 
 
-def fetch_all_transactions_from_bot(bot_name: str, in_json=True):
+async def fetch_all_transactions_from_bot(bot_name: str, in_json=True):
     """
         Obtiene todas las transacciones asociadas a un bot de la tabla "Transactions".
     """
-    conn = connect()
+    conn = await connect()
     if in_json:
         conn.row_factory = sqlite3.Row
-    c = conn.cursor()
     bot_id = get_bot_id(bot_name)
     if bot_id:
-        c.execute("""SELECT * FROM Transactions WHERE bot_id = (?)""", [bot_id])
-        rows = c.fetchall()
+        c = await conn.execute("""SELECT * FROM Transactions WHERE bot_id = (?)""", [bot_id])
+        rows = await c.fetchall()
         if in_json:
             rows = json.dumps([dict(ix) for ix in rows])
             rows = json.loads(rows)
     else:
         rows = list()
-    conn.close()
+    await conn.close()
     return rows
 
 
-def fetch_transactions_by_year(bot_name: str, year: int):
+async def fetch_transactions_by_year(bot_name: str, year: int):
     """
     Obtiene las transacciones de un año específico y un bot_id dado directamente de la base de datos.
     """
-    conn = connect()
-    bot_id = get_bot_id(bot_name)
+    print(bot_name)
+    print(year)
+    conn = await connect()
+    bot_id = await get_bot_id(bot_name)
     query = """
         SELECT date, quantity
         FROM Transactions
         WHERE strftime('%Y', date) = ? AND bot_id = ?
     """
-    transactions = pd.read_sql_query(query, conn, params=(str(year), int(bot_id)))
-    return transactions
+    async with conn.execute(query, (str(year), str(bot_id))) as cursor:
+        rows = await cursor.fetchall()
+        # Crear un DataFrame de pandas a partir de los resultados
+        df = pd.DataFrame(rows, columns=['date', 'quantity'])
+    return df
 
 
-def fetch_transactions_by_month(bot_name: str, year: int, month: int, group_by_day=False):
+async def fetch_transactions_by_month(bot_name: str, year: int, month: int, group_by_day=False):
     if month < 10:
         month = "0"+str(month)
-    conn = connect()
-    bot_id = get_bot_id(bot_name)
+    conn = await connect()
+    bot_id = await get_bot_id(bot_name)
     query = """
             SELECT date, quantity
             FROM Transactions
             WHERE strftime('%Y', date) = ? AND strftime('%m', date) = ? AND bot_id = ?
         """
-    transactions = pd.read_sql_query(query, conn, params=(str(year), str(month), int(bot_id)))
+    async with conn.execute(query, (str(year), str(month), str(bot_id))) as cursor:
+        rows = await cursor.fetchall()
+        # Creamos un DataFrame de pandas a partir de los resultados
+        transactions = pd.DataFrame(rows, columns=['date', 'quantity'])
+
     if not group_by_day:
         return transactions
     else:
@@ -251,27 +250,25 @@ def fetch_transactions_by_month(bot_name: str, year: int, month: int, group_by_d
         return daily_transactions
 
 
-def get_bot_id(bot_name: str):
+async def get_bot_id(bot_name: str):
     """
         Obtiene el ID de un bot según su nombre en la tabla "Bots".
     """
-    conn = connect()
-    c = conn.cursor()
-    c.execute("""SELECT rowid FROM Bots WHERE name = (?)""", [bot_name])
+    conn = await connect()
+    c = await conn.execute("""SELECT rowid FROM Bots WHERE name = (?)""", [bot_name])
     try:
-        bot_id = c.fetchone()[0]
+        bot_id = await c.fetchone()[0]
     except TypeError:
         bot_id = None
-    conn.close()
+    await conn.close()
     return bot_id
 
 
-def create_date_transactions_index():
+async def create_date_transactions_index():
     """
     Crea un índice en la columna 'date' de la tabla 'Transactions'.
     """
-    conn = connect()
-    c = conn.cursor()
-    c.execute("CREATE INDEX idx_transactions_date ON Transactions(date)")
-    conn.commit()
-    conn.close()
+    conn = await connect()
+    await conn.execute("CREATE INDEX idx_transactions_date ON Transactions(date)")
+    await conn.commit()
+    await conn.close()
