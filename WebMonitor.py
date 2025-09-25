@@ -8,6 +8,8 @@ from fastapi.templating import Jinja2Templates
 from fastapi.responses import RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
+from typing import Optional
+
 # Own Modules
 import database
 import data_tratment
@@ -44,18 +46,26 @@ async def frontend(request: Request):
     )
 
 
+@web_monitor.get("/bot_details/")
 @web_monitor.get("/bot_details/{bot_name}")
-async def bot_details(request: Request, bot_name: str):
-    details = await database.fetch_bot_details(bot_name)
+async def bot_details(request: Request, bot_name: Optional[str] = None):
+    # Si bot_name es None, obtendremos los detalles de todos los bots
+    details = await database.fetch_bot_details(bot_name) if bot_name else {}
+
     current_year = datetime.datetime.now().year
-    transactions = await database.fetch_transactions_by_year(bot_name, current_year)
+    # Si bot_name es None, devolverá las transacciones de todos los bots
+    transactions = await database.fetch_transactions_by_year(current_year, bot_name)
+
     total_this_year, avg = data_tratment.calculate_total_per_month(transactions)
-    clp_avg = avg / 1000000 * 450
+    clp_avg = round(avg / 1000000 * 450)
 
     if len(list(total_this_year.values())) > 0:
         last_month_silver = list(total_this_year.values())[-1]
         date_now = datetime.datetime.now()
-        data_this_month = await database.fetch_transactions_by_month(bot_name, date_now.year, date_now.month, group_by_day=True)
+        # Mismo comportamiento para las transacciones del mes
+        data_this_month = await database.fetch_transactions_by_month(
+            date_now.year, date_now.month, bot_name, group_by_day=True
+        )
         first_entry_day = pd.to_datetime(data_this_month.iloc[0].date).day
 
         try:
@@ -65,11 +75,14 @@ async def bot_details(request: Request, bot_name: str):
     else:
         avg_this_month = 0
         data_this_month = pd.DataFrame()
+
     # Numerize
     avg = numerize.numerize.numerize(avg)
     avg_this_month = numerize.numerize.numerize(avg_this_month)
 
-    return templates.TemplateResponse("bot_details.html", {
+    template = "bot_details.html" if bot_name else "dashboard.html"
+
+    return templates.TemplateResponse(template, {
         "request": request,
         "details": details,
         "total_this_year": total_this_year,
@@ -133,4 +146,4 @@ async def base64_stream():
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(web_monitor, host='0.0.0.0', port=8080, log_level='warning')
+    uvicorn.run(web_monitor, host='0.0.0.0', port=8082)

@@ -204,38 +204,59 @@ async def fetch_all_transactions_from_bot(bot_name: str, in_json=True):
     return rows
 
 
-async def fetch_transactions_by_year(bot_name: str, year: int):
+async def fetch_transactions_by_year(year: int, bot_name: str = None):
     """
     Obtiene las transacciones de un año específico y un bot_id dado directamente de la base de datos.
     """
     conn = await connect()
-    bot_id = await get_bot_id(bot_name)
-    query = """
-        SELECT date, quantity
-        FROM Transactions
-        WHERE strftime('%Y', date) = ? AND bot_id = ?
-    """
-    async with conn.execute(query, (str(year), str(bot_id))) as cursor:
-        rows = await cursor.fetchall()
-        # Crear un DataFrame de pandas a partir de los resultados
-        df = pd.DataFrame(rows, columns=['date', 'quantity'])
+    if bot_name:
+        bot_id = await get_bot_id(bot_name)
+        query = """
+            SELECT date, quantity
+            FROM Transactions
+            WHERE strftime('%Y', date) = ? AND bot_id = ?
+        """
+        async with conn.execute(query, (str(year), str(bot_id))) as cursor:
+            rows = await cursor.fetchall()
+            # Crear un DataFrame de pandas a partir de los resultados
+            df = pd.DataFrame(rows, columns=['date', 'quantity'])
+    else:
+        query = """
+            SELECT date, quantity
+            FROM Transactions
+            WHERE strftime('%Y', date) = ?
+        """
+        async with conn.execute(query, (str(year), )) as cursor:
+            rows = await cursor.fetchall()
+            # Crear un DataFrame de pandas a partir de los resultados
+            df = pd.DataFrame(rows, columns=['date', 'quantity'])
     return df
 
 
-async def fetch_transactions_by_month(bot_name: str, year: int, month: int, group_by_day=False):
-    if month < 10:
-        month = "0"+str(month)
+async def fetch_transactions_by_month(year: int, month: int, bot_name: str = None, group_by_day=False):
+    month = f"{month:02}"
     conn = await connect()
-    bot_id = await get_bot_id(bot_name)
-    query = """
+    if bot_name:
+        bot_id = await get_bot_id(bot_name)
+        query = """
+                SELECT date, quantity
+                FROM Transactions
+                WHERE strftime('%Y', date) = ? AND strftime('%m', date) = ? AND bot_id = ?
+            """
+        async with conn.execute(query, (str(year), str(month), str(bot_id))) as cursor:
+            rows = await cursor.fetchall()
+            # Creamos un DataFrame de pandas a partir de los resultados
+            transactions = pd.DataFrame(rows, columns=['date', 'quantity'])
+    else:
+        query = """
             SELECT date, quantity
             FROM Transactions
-            WHERE strftime('%Y', date) = ? AND strftime('%m', date) = ? AND bot_id = ?
+            WHERE strftime('%Y', date) = ? AND strftime('%m', date) = ?
         """
-    async with conn.execute(query, (str(year), str(month), str(bot_id))) as cursor:
-        rows = await cursor.fetchall()
-        # Creamos un DataFrame de pandas a partir de los resultados
-        transactions = pd.DataFrame(rows, columns=['date', 'quantity'])
+        async with conn.execute(query, (str(year), str(month))) as cursor:
+            rows = await cursor.fetchall()
+            # Creamos un DataFrame de pandas a partir de los resultados
+            transactions = pd.DataFrame(rows, columns=['date', 'quantity'])
 
     if not group_by_day:
         return transactions
